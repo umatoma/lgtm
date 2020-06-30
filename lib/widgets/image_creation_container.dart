@@ -1,9 +1,11 @@
 import 'dart:js_util';
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lgtm/database/firestore_database.dart';
+import 'package:lgtm/database/function_database.dart';
 import 'package:lgtm/database/storage_database.dart';
 import 'package:lgtm/js.dart';
 import 'package:lgtm/widgets/image_created_view.dart';
@@ -17,6 +19,7 @@ class ImageCreationContainer extends StatefulWidget {
 class _ImageCreationContainerState extends State<ImageCreationContainer> {
   final StorageDatabase storage = StorageDatabase();
   final FirestoreDatabase firestore = FirestoreDatabase();
+  final FunctionDatabase function = FunctionDatabase();
 
   bool _isProcessing = false;
   FirestoreImage _image;
@@ -31,30 +34,58 @@ class _ImageCreationContainerState extends State<ImageCreationContainer> {
     }
 
     if (_error != null) {
-      return Center(
-        child: Text(_error),
+      return Column(
+        children: <Widget>[
+          Text(
+            'ERROR',
+            style: Theme.of(context).textTheme.subtitle1,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _error,
+            style: const TextStyle(color: Colors.red),
+          ),
+          const SizedBox(height: 64),
+          OutlineButton(
+            onPressed: () {
+              setState(() => _error = null);
+            },
+            child: const Text('Close'),
+          ),
+        ],
       );
     }
 
     if (_image != null) {
-      return ImageCreatedView(image: _image);
+      return ImageCreatedView(
+        image: _image,
+        onClose: () {
+          setState(() => _image = null);
+        },
+      );
     }
 
     return ImageSelectForm(
       onFilePicked: (PickedFile pickedFile) {
-        _createAndUploadLgtmImage(pickedFile);
+        _createAndUploadLgtmImage(() => pickedFile.readAsBytes());
+      },
+      onImageSelected: (FunctionImage functionImage) {
+        // ...
       },
     );
   }
 
-  Future<void> _createAndUploadLgtmImage(PickedFile pickedFile) async {
+  Future<void> _createAndUploadLgtmImage(
+    Future<Uint8List> Function() getImageBytes,
+  ) async {
     setState(() {
       _isProcessing = true;
     });
 
     try {
       // Save image file to storage
-      final Uint8List imageBytes = await _createLgtmImage(pickedFile);
+      final Uint8List bytes = await getImageBytes();
+      final Uint8List imageBytes = await _createLgtmImage(bytes);
       final StorageImage storageImage = await storage.putImagePng(imageBytes);
 
       // Save image data to firestore
@@ -81,7 +112,7 @@ class _ImageCreationContainerState extends State<ImageCreationContainer> {
     }
   }
 
-  Future<Uint8List> _createLgtmImage(PickedFile pickedFile) async {
+  Future<Uint8List> _createLgtmImage(Uint8List bytes) async {
     const int width = 320;
     const String text = 'LGTM';
     const String fontWhiteUrl =
@@ -90,7 +121,6 @@ class _ImageCreationContainerState extends State<ImageCreationContainer> {
         'https://cdn.jsdelivr.net/npm/jimp@0.13.0/fonts/open-sans/open-sans-64-black/open-sans-64-black.fnt';
 
     // Read buffer from PickedFile
-    final Uint8List bytes = await pickedFile.readAsBytes();
     final Buffer buffer = Buffer.from(bytes);
 
     // Create Jimp instance from buffer

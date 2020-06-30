@@ -16,6 +16,7 @@ class LgtmApp extends StatelessWidget {
       title: 'LGTM Hub',
       theme: ThemeData(
         primarySwatch: primarySwatch,
+        backgroundColor: Colors.grey[50],
         buttonTheme: const ButtonThemeData(
           textTheme: ButtonTextTheme.primary,
         ),
@@ -33,6 +34,7 @@ class MainScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).backgroundColor,
       body: SafeArea(
         child: Container(
           child: Column(

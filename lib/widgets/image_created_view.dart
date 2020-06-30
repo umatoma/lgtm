@@ -6,9 +6,11 @@ class ImageCreatedView extends StatelessWidget {
   const ImageCreatedView({
     Key key,
     @required this.image,
+    @required this.onClose,
   }) : super(key: key);
 
   final FirestoreImage image;
+  final Function onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +56,11 @@ class ImageCreatedView extends StatelessWidget {
                 child: Text('Copy Markdown'),
               ),
             ),
+          ),
+          const SizedBox(height: 64),
+          OutlineButton(
+            onPressed: () => onClose(),
+            child: const Text('Close'),
           ),
         ],
       ),

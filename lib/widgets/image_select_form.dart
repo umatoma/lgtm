@@ -1,18 +1,36 @@
 import 'dart:html';
 import 'dart:ui' as ui;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lgtm/database/function_database.dart';
+import 'package:transparent_image/transparent_image.dart';
 
-class ImageSelectForm extends StatelessWidget {
-  ImageSelectForm({
+class ImageSelectForm extends StatefulWidget {
+  const ImageSelectForm({
     Key key,
     @required this.onFilePicked,
+    @required this.onImageSelected,
   }) : super(key: key);
 
-  final ImagePicker picker = ImagePicker();
   final Function(PickedFile pickedFile) onFilePicked;
+  final Function(FunctionImage functionImage) onImageSelected;
+
+  @override
+  _ImageSelectFormState createState() => _ImageSelectFormState();
+}
+
+class _ImageSelectFormState extends State<ImageSelectForm> {
+  final FunctionDatabase function = FunctionDatabase();
+  final ImagePicker picker = ImagePicker();
+  final TextEditingController queryController = TextEditingController();
+
+  Future<List<FunctionImage>> imagesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +39,7 @@ class ImageSelectForm extends StatelessWidget {
       child: Column(
         children: <Widget>[
           Text(
-            'Create LGTM image',
+            'LGTM画像を作ろう!!',
             style: Theme.of(context).textTheme.subtitle1,
           ),
           const SizedBox(height: 16),
@@ -30,12 +48,16 @@ class ImageSelectForm extends StatelessWidget {
             children: <Widget>[
               Flexible(
                 child: TextField(
-                  decoration: const InputDecoration(labelText: 'Search Images'),
-                  controller: TextEditingController(),
+                  decoration: const InputDecoration(labelText: 'Google画像検索'),
+                  controller: queryController,
                 ),
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: () async {
+                  setState(() {
+                    imagesFuture = function.searchImages(queryController.text);
+                  });
+                },
                 icon: const Icon(Icons.search),
               ),
             ],
@@ -43,35 +65,57 @@ class ImageSelectForm extends StatelessWidget {
           const SizedBox(height: 16),
           // Image list
           Expanded(
-            child: GridView.count(
-              crossAxisCount: 3,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              children: List<Widget>.generate(12, (int index) {
-                return MaterialButton(
-                  key: ValueKey<String>('search-image-$index'),
-                  onPressed: () {},
-                  color: Colors.grey,
-                  padding: const EdgeInsets.all(0),
-                  child: SizedBox.expand(
-                    child: CachedNetworkImage(
-                      placeholder: (_, __) {
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      },
-                      fit: BoxFit.cover,
-                      imageUrl: 'https://dummyimage.com/600x400/ddd/000',
+            child: FutureBuilder<List<FunctionImage>>(
+              future: imagesFuture,
+              builder: (
+                BuildContext context,
+                AsyncSnapshot<List<FunctionImage>> snapshot,
+              ) {
+                if (snapshot.connectionState == ConnectionState.none) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const <Widget>[
+                        Icon(Icons.arrow_upward),
+                        SizedBox(height: 16),
+                        Text(
+                          '画像検索 or 画像アップロードで\nLGTM画像が作れます!!',
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 16),
+                        Icon(Icons.arrow_downward),
+                      ],
                     ),
-                  ),
-                );
-              }),
+                  );
+                }
+
+                if (snapshot.connectionState == ConnectionState.done) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        snapshot.error.toString(),
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    );
+                  }
+
+                  if (snapshot.hasData) {
+                    return _ImagesGridView(
+                      images: snapshot.data,
+                      onTap: (FunctionImage image) =>
+                          widget.onImageSelected(image),
+                    );
+                  }
+                }
+
+                return const Center(child: CircularProgressIndicator());
+              },
             ),
           ),
           const SizedBox(height: 16),
           _ImageDropZone(
             onDrop: (PickedFile pickedFile) {
-              onFilePicked(pickedFile);
+              widget.onFilePicked(pickedFile);
             },
             onError: (dynamic e) {},
           ),
@@ -84,13 +128,48 @@ class ImageSelectForm extends StatelessWidget {
                 final PickedFile pickedFile = await picker.getImage(
                   source: ImageSource.gallery,
                 );
-                onFilePicked(pickedFile);
+                widget.onFilePicked(pickedFile);
               },
-              child: const Text('Select image'),
+              child: const Text('画像ファイル選択'),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ImagesGridView extends StatelessWidget {
+  const _ImagesGridView({
+    Key key,
+    @required this.images,
+    @required this.onTap,
+  }) : super(key: key);
+
+  final List<FunctionImage> images;
+  final Function(FunctionImage image) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 3,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      children: images.map((FunctionImage image) {
+        return MaterialButton(
+          key: ValueKey<String>(image.link),
+          onPressed: () => onTap(image),
+          color: Colors.grey,
+          padding: const EdgeInsets.all(0),
+          child: SizedBox.expand(
+            child: FadeInImage.memoryNetwork(
+              fit: BoxFit.cover,
+              placeholder: kTransparentImage,
+              image: image.thumbnailLink,
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -173,7 +252,7 @@ class __ImageDropZoneState extends State<_ImageDropZone> {
           Align(
             alignment: Alignment.center,
             child: Text(
-              'Drop image here',
+              'ここにファイルをドラッグ＆ドロップ!!',
               style: TextStyle(
                 color:
                     isDragging ? Theme.of(context).primaryColor : Colors.black,

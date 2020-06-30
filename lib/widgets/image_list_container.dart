@@ -13,15 +13,15 @@ class ImageListContainer extends StatelessWidget {
         child: Column(
           children: <Widget>[
             Text(
-              'LGTM images',
+              'LGTM投稿画像一覧',
               style: Theme.of(context).textTheme.subtitle1,
             ),
             const SizedBox(height: 16),
             const TabBar(
               tabs: <Widget>[
-                Tab(icon: Text('Latest')),
-                Tab(icon: Text('Random')),
-                Tab(icon: Text('Favorite')),
+                Tab(icon: Text('最新')),
+                Tab(icon: Text('ランダム')),
+                Tab(icon: Text('お気に入り')),
               ],
             ),
             const SizedBox(height: 16),
@@ -128,6 +128,7 @@ class __GridImageState extends State<_GridImage>
           padding: const EdgeInsets.all(0),
           child: SizedBox.expand(
             child: FadeInImage.memoryNetwork(
+              fit: BoxFit.cover,
               placeholder: kTransparentImage,
               image: widget.image.imageURL,
             ),
@@ -142,7 +143,10 @@ class __GridImageState extends State<_GridImage>
             );
           },
           child: Container(
-            color: Colors.black,
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor,
+              borderRadius: BorderRadius.circular(4),
+            ),
             child: Center(
               child: Text(
                 _message,
