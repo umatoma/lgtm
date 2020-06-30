@@ -1,5 +1,5 @@
 {
-  "name": "netlify_functions",
+  "name": "proxy_image",
   "version": "1.0.0",
   "description": "",
   "main": "proxy_image.js",
@@ -8,5 +8,8 @@
   },
   "author": "",
   "license": "ISC",
-  "devDependencies": {}
+  "devDependencies": {},
+  "dependencies": {
+    "node-fetch": "^2.6.0"
+  }
 }
