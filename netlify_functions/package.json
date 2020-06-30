@@ -1,5 +1,5 @@
 {
-  "name": "package_proxy_image",
+  "name": "netlify_functions",
   "version": "1.0.0",
   "description": "",
   "main": "proxy_image.js",
