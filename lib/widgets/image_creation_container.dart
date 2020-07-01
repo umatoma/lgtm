@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:lgtm/database/firestore_database.dart';
 import 'package:lgtm/database/function_database.dart';
@@ -69,8 +70,15 @@ class _ImageCreationContainerState extends State<ImageCreationContainer> {
       onFilePicked: (PickedFile pickedFile) {
         _createAndUploadLgtmImage(() => pickedFile.readAsBytes());
       },
-      onImageSelected: (FunctionImage functionImage) {
-        // ...
+      onImageSelected: (FunctionImage functionImage) async {
+        _createAndUploadLgtmImage(() async {
+          final String url =
+              'https://proxy-image.netlify.app/.netlify/functions/proxy_image'
+              '?url=${Uri.encodeComponent(functionImage.link)}';
+          final http.Response res = await http.get(url);
+          final Uint8List bytes = res.bodyBytes;
+          return bytes;
+        });
       },
     );
   }

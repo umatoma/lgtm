@@ -9,6 +9,7 @@ exports.handler = async (event, context) => {
         const headers = {
             'content-type': res.headers.get('content-type'),
             'content-length': res.headers.get('content-length'),
+            'access-control-allow-origin': '*',
         };
         return {
             statusCode: 200,
