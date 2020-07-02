@@ -12,10 +12,12 @@ class ImageSelectForm extends StatefulWidget {
     Key key,
     @required this.onFilePicked,
     @required this.onImageSelected,
+    @required this.onError,
   }) : super(key: key);
 
   final Function(PickedFile pickedFile) onFilePicked;
   final Function(FunctionImage functionImage) onImageSelected;
+  final Function(dynamic error) onError;
 
   @override
   _ImageSelectFormState createState() => _ImageSelectFormState();
@@ -38,8 +40,8 @@ class _ImageSelectFormState extends State<ImageSelectForm> {
     fileSubscription = view.pickedFileStream.listen((PickedFile file) {
       widget.onFilePicked(file);
     });
-    errorSubscription = view.errorStream.listen((dynamic event) {
-      print(event.toString());
+    errorSubscription = view.errorStream.listen((dynamic error) {
+      widget.onError(error);
     });
   }
 

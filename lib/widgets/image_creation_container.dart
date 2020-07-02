@@ -27,31 +27,42 @@ class _ImageCreationContainerState extends State<ImageCreationContainer> {
   @override
   Widget build(BuildContext context) {
     if (_isProcessing == true) {
-      return const Center(
-        child: CircularProgressIndicator(),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const <Widget>[
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('LGTM画像を作成中です！！'),
+            Text('GIFの場合は少し時間がかかります'),
+          ],
+        ),
       );
     }
 
     if (_error != null) {
-      return Column(
-        children: <Widget>[
-          Text(
-            'ERROR',
-            style: Theme.of(context).textTheme.subtitle1,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _error,
-            style: const TextStyle(color: Colors.red),
-          ),
-          const SizedBox(height: 64),
-          OutlineButton(
-            onPressed: () {
-              setState(() => _error = null);
-            },
-            child: const Text('Close'),
-          ),
-        ],
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              'ERROR',
+              style: Theme.of(context).textTheme.subtitle1,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _error,
+              style: const TextStyle(color: Colors.red),
+            ),
+            const SizedBox(height: 64),
+            OutlineButton(
+              onPressed: () {
+                setState(() => _error = null);
+              },
+              child: const Text('閉じる'),
+            ),
+          ],
+        ),
       );
     }
 
@@ -81,6 +92,9 @@ class _ImageCreationContainerState extends State<ImageCreationContainer> {
             return bytes;
           },
         );
+      },
+      onError: (dynamic e) {
+        setState(() => _error = e.toString());
       },
     );
   }
