@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 
@@ -17,6 +20,18 @@ class FunctionDatabase {
             ))
         .toList();
     return imageList;
+  }
+
+  Future<Uint8List> createLgtmImage(Uint8List imageBytes) async {
+    final HttpsCallable callable = CloudFunctions.instance.getHttpsCallable(
+      functionName: 'createLgtmImage',
+    );
+    final HttpsCallableResult resp = await callable.call(<String, dynamic>{
+      'image': base64.encode(imageBytes),
+    });
+    final String lgtmImageString = resp.data['image'] as String;
+    final Uint8List lgtmImageBytes = base64.decode(lgtmImageString);
+    return lgtmImageBytes;
   }
 }
 

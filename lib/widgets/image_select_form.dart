@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:html';
 import 'dart:ui' as ui;
 
@@ -26,10 +27,28 @@ class _ImageSelectFormState extends State<ImageSelectForm> {
   final TextEditingController queryController = TextEditingController();
 
   Future<List<FunctionImage>> imagesFuture;
+  StreamSubscription<PickedFile> fileSubscription;
+  StreamSubscription<dynamic> errorSubscription;
 
   @override
   void initState() {
     super.initState();
+
+    final _ImageDropZoneView view = _ImageDropZoneView.getInstance();
+    fileSubscription = view.pickedFileStream.listen((PickedFile file) {
+      widget.onFilePicked(file);
+    });
+    errorSubscription = view.errorStream.listen((dynamic event) {
+      print(event.toString());
+    });
+  }
+
+  @override
+  void dispose() {
+    fileSubscription.cancel();
+    errorSubscription.cancel();
+
+    super.dispose();
   }
 
   @override
@@ -50,6 +69,12 @@ class _ImageSelectFormState extends State<ImageSelectForm> {
                 child: TextField(
                   decoration: const InputDecoration(labelText: 'Google画像検索'),
                   controller: queryController,
+                  onSubmitted: (String _) {
+                    setState(() {
+                      imagesFuture =
+                          function.searchImages(queryController.text);
+                    });
+                  },
                 ),
               ),
               IconButton(
@@ -113,12 +138,7 @@ class _ImageSelectFormState extends State<ImageSelectForm> {
             ),
           ),
           const SizedBox(height: 16),
-          _ImageDropZone(
-            onDrop: (PickedFile pickedFile) {
-              widget.onFilePicked(pickedFile);
-            },
-            onError: (dynamic e) {},
-          ),
+          _ImageDropZone(),
           const SizedBox(height: 16),
           // Select image button
           Container(
@@ -174,32 +194,14 @@ class _ImagesGridView extends StatelessWidget {
   }
 }
 
-class _ImageDropZone extends StatefulWidget {
-  const _ImageDropZone({
-    Key key,
-    @required this.onDrop,
-    @required this.onError,
-  }) : super(key: key);
-
-  final Function(PickedFile pickedFile) onDrop;
-  final Function(dynamic e) onError;
-
-  @override
-  __ImageDropZoneState createState() => __ImageDropZoneState();
-}
-
-class __ImageDropZoneState extends State<_ImageDropZone> {
-  bool isDragging = false;
-
-  @override
-  void initState() {
-    super.initState();
-
+class _ImageDropZoneView {
+  _ImageDropZoneView._() {
     // ignore: undefined_prefixed_name
     ui.platformViewRegistry.registerViewFactory(
       'image-drop-zone',
       (int viewId) {
-        return DivElement()
+        final DivElement element = DivElement()
+          ..id = 'image-drop-zone-$viewId'
           ..addEventListener('drop', (Event event) {
             event.preventDefault();
 
@@ -212,51 +214,49 @@ class __ImageDropZoneState extends State<_ImageDropZone> {
                 final String objectUrl = Url.createObjectUrl(file);
                 final PickedFile pickedFile = PickedFile(objectUrl);
 
-                widget.onDrop(pickedFile);
+                _fileController.add(pickedFile);
               } catch (e) {
-                widget.onError(e);
+                _errorController.add(e);
               }
             }
           })
           ..addEventListener('dragover', (Event event) {
             event.preventDefault();
-          })
-          ..addEventListener('dragenter', (Event event) {
-            setState(() => isDragging = true);
-          })
-          ..addEventListener('dragleave', (Event event) {
-            setState(() => isDragging = false);
-          })
-          ..className = 'HOGE'
-          ..id = 'FUGA';
+          });
+        return element;
       },
     );
   }
 
+  static _ImageDropZoneView _instance;
+  static final StreamController<PickedFile> _fileController =
+      StreamController<PickedFile>.broadcast();
+  static final StreamController<dynamic> _errorController =
+      StreamController<dynamic>.broadcast();
+
+  static _ImageDropZoneView getInstance() {
+    _instance ??= _ImageDropZoneView._();
+    return _instance;
+  }
+
+  Stream<PickedFile> get pickedFileStream => _fileController.stream;
+  Stream<dynamic> get errorStream => _errorController.stream;
+}
+
+class _ImageDropZone extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 192,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          width: 1,
-          color: isDragging
-              ? Theme.of(context).primaryColor
-              : Theme.of(context).dividerColor,
-        ),
-      ),
       child: Stack(
         children: <Widget>[
           const HtmlElementView(viewType: 'image-drop-zone'),
-          Align(
-            alignment: Alignment.center,
-            child: Text(
-              'ここにファイルをドラッグ＆ドロップ!!',
-              style: TextStyle(
-                color:
-                    isDragging ? Theme.of(context).primaryColor : Colors.black,
-              ),
+          Container(
+            height: double.infinity,
+            width: double.infinity,
+            child: OutlineButton(
+              onPressed: () {},
+              child: const Text('ここに画像をドラッグ＆ドロップ!!'),
             ),
           ),
         ],
