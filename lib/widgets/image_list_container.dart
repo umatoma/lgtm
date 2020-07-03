@@ -1,10 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lgtm/database/firestore_database.dart';
+import 'package:lgtm/database/local_storage_database.dart';
+import 'package:lgtm/model/image_model.dart';
+import 'package:lgtm/notifier/favorite_list_notifier.dart';
+import 'package:provider/provider.dart';
 import 'package:transparent_image/transparent_image.dart';
 
-class ImageListContainer extends StatelessWidget {
+class ImageListContainer extends StatefulWidget {
+  @override
+  _ImageListContainerState createState() => _ImageListContainerState();
+}
+
+class _ImageListContainerState extends State<ImageListContainer> {
   final FirestoreDatabase firestore = FirestoreDatabase();
+  final FavoriteListNotifier favoriteList = FavoriteListNotifier();
+
+  @override
+  void initState() {
+    super.initState();
+
+    favoriteList.fetchFavoriteList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,16 +45,16 @@ class ImageListContainer extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: TabBarView(
-                physics: const NeverScrollableScrollPhysics(),
-                children: <Widget>[
-                  _LatestImagesGridView(),
-                  _RandomImagesGridView(),
-                  _ImagesGridView(
-                    future:
-                        Future<List<FirestoreImage>>.value(<FirestoreImage>[]),
-                  ),
-                ],
+              child: ChangeNotifierProvider<FavoriteListNotifier>.value(
+                value: favoriteList,
+                child: TabBarView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: <Widget>[
+                    _LatestImagesGridView(),
+                    _RandomImagesGridView(),
+                    _FavoriteImagesGridView(),
+                  ],
+                ),
               ),
             ),
           ],
@@ -65,21 +82,40 @@ class _RandomImagesGridView extends StatelessWidget {
   }
 }
 
+class _FavoriteImagesGridView extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final FavoriteListNotifier favoriteListNotifier =
+        context.watch<FavoriteListNotifier>();
+    final List<LocalStorageFavorite> favoriteList =
+        favoriteListNotifier.favoriteList;
+
+    return _ImagesGridView(
+      future: Future<List<ImageModel>>.value(favoriteList),
+    );
+  }
+}
+
 class _ImagesGridView extends StatelessWidget {
   const _ImagesGridView({
     Key key,
     @required this.future,
   }) : super(key: key);
 
-  final Future<List<FirestoreImage>> future;
+  final Future<List<ImageModel>> future;
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<FirestoreImage>>(
+    final FavoriteListNotifier favoriteListNotifier =
+        context.watch<FavoriteListNotifier>();
+    final List<LocalStorageFavorite> favoriteList =
+        favoriteListNotifier.favoriteList;
+
+    return FutureBuilder<List<ImageModel>>(
       future: future,
       builder: (
         BuildContext context,
-        AsyncSnapshot<List<FirestoreImage>> snapshot,
+        AsyncSnapshot<List<ImageModel>> snapshot,
       ) {
         if (snapshot.hasError) {
           return Center(child: Text(snapshot.error.toString()));
@@ -90,16 +126,31 @@ class _ImagesGridView extends StatelessWidget {
             crossAxisCount: 5,
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
-            children: snapshot.data.map((FirestoreImage image) {
+            children: snapshot.data.map((ImageModel image) {
+              final LocalStorageFavorite favorite = favoriteList.firstWhere(
+                (LocalStorageFavorite fav) => fav.id == image.id,
+                orElse: () => null,
+              );
+
               return _GridImage(
-                key: ValueKey<String>(image.id),
+                key: ValueKey<String>(image.imageURL),
                 image: image,
+                isFavorite: favorite != null,
                 onCopy: () async {
                   final String text = '![LGTM](${image.imageURL})';
                   final ClipboardData data = ClipboardData(text: text);
                   await Clipboard.setData(data);
                 },
-                onFavorite: () {},
+                onAddFavorite: () {
+                  favoriteListNotifier.addFavorite(
+                    LocalStorageFavorite.fromImageModel(image),
+                  );
+                },
+                onRemoveFavorite: () {
+                  favoriteListNotifier.removeFavorite(
+                    LocalStorageFavorite.fromImageModel(image),
+                  );
+                },
               );
             }).toList(),
           );
@@ -115,13 +166,17 @@ class _GridImage extends StatefulWidget {
   const _GridImage({
     Key key,
     @required this.image,
+    @required this.isFavorite,
     @required this.onCopy,
-    @required this.onFavorite,
+    @required this.onAddFavorite,
+    @required this.onRemoveFavorite,
   }) : super(key: key);
 
-  final FirestoreImage image;
+  final ImageModel image;
+  final bool isFavorite;
   final Function() onCopy;
-  final Function() onFavorite;
+  final Function() onAddFavorite;
+  final Function() onRemoveFavorite;
 
   @override
   __GridImageState createState() => __GridImageState();
@@ -151,7 +206,7 @@ class __GridImageState extends State<_GridImage>
   @override
   Widget build(BuildContext context) {
     return Stack(
-      key: ValueKey<String>(widget.image.id),
+      key: ValueKey<String>(widget.image.imageURL),
       children: <Widget>[
         MaterialButton(
           onPressed: () {},
@@ -201,16 +256,28 @@ class __GridImageState extends State<_GridImage>
                 },
                 icon: const Icon(Icons.content_copy),
               ),
-              IconButton(
-                onPressed: () {
-                  widget.onFavorite();
+              if (widget.isFavorite == true)
+                IconButton(
+                  onPressed: () {
+                    widget.onRemoveFavorite();
 
-                  setState(() => _message = 'ADDED!!');
-                  _controller.reset();
-                  _controller.forward();
-                },
-                icon: const Icon(Icons.favorite_border),
-              ),
+                    setState(() => _message = 'REMOVED!!');
+                    _controller.reset();
+                    _controller.forward();
+                  },
+                  icon: const Icon(Icons.favorite),
+                )
+              else
+                IconButton(
+                  onPressed: () {
+                    widget.onAddFavorite();
+
+                    setState(() => _message = 'ADDED!!');
+                    _controller.reset();
+                    _controller.forward();
+                  },
+                  icon: const Icon(Icons.favorite_border),
+                ),
             ],
           ),
         ),

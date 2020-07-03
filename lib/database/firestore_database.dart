@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:lgtm/model/image_model.dart';
 
 class FirestoreDatabase {
   Future<String> createImage(FirestoreImage image) async {
@@ -89,29 +90,28 @@ class FirestoreDatabase {
   }
 }
 
-class FirestoreImage {
+class FirestoreImage extends ImageModel {
   FirestoreImage({
     this.id,
     this.index,
     @required this.name,
     @required this.fullPath,
-    @required this.imageURL,
+    @required String imageURL,
     this.createdAt,
-  });
+  }) : super(imageURL: imageURL);
 
   FirestoreImage.fromDocument(DocumentSnapshot document)
       : id = document.documentID,
         index = document['index'] as int,
         name = document['name'] as String,
         fullPath = document['fullPath'] as String,
-        imageURL = document['imageURL'] as String,
-        createdAt = document['createdAt'] as Timestamp;
+        createdAt = document['createdAt'] as Timestamp,
+        super(imageURL: document['imageURL'] as String);
 
   final String id;
   final int index;
   final String name;
   final String fullPath;
-  final String imageURL;
   final Timestamp createdAt;
 
   Map<String, dynamic> toData({
