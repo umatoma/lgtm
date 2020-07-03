@@ -4,6 +4,8 @@ import 'package:lgtm/database/firestore_database.dart';
 import 'package:transparent_image/transparent_image.dart';
 
 class ImageListContainer extends StatelessWidget {
+  final FirestoreDatabase firestore = FirestoreDatabase();
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -27,10 +29,14 @@ class ImageListContainer extends StatelessWidget {
             const SizedBox(height: 16),
             Expanded(
               child: TabBarView(
+                physics: const NeverScrollableScrollPhysics(),
                 children: <Widget>[
                   _LatestImagesGridView(),
-                  _LatestImagesGridView(),
-                  _LatestImagesGridView(),
+                  _RandomImagesGridView(),
+                  _ImagesGridView(
+                    future:
+                        Future<List<FirestoreImage>>.value(<FirestoreImage>[]),
+                  ),
                 ],
               ),
             ),
@@ -44,8 +50,33 @@ class ImageListContainer extends StatelessWidget {
 class _LatestImagesGridView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<FirestoreImage>>(
+    return _ImagesGridView(
       future: FirestoreDatabase().getImageList(),
+    );
+  }
+}
+
+class _RandomImagesGridView extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return _ImagesGridView(
+      future: FirestoreDatabase().getRandomImageList(),
+    );
+  }
+}
+
+class _ImagesGridView extends StatelessWidget {
+  const _ImagesGridView({
+    Key key,
+    @required this.future,
+  }) : super(key: key);
+
+  final Future<List<FirestoreImage>> future;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<FirestoreImage>>(
+      future: future,
       builder: (
         BuildContext context,
         AsyncSnapshot<List<FirestoreImage>> snapshot,
