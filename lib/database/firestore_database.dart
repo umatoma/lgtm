@@ -62,8 +62,7 @@ class FirestoreDatabase {
   }
 
   Future<List<FirestoreImage>> getRandomImageList() async {
-    const int limit = 25;
-    const int listSize = limit + 10;
+    const int listSize = 25;
 
     final FirestoreImage latestImage = await getLatestImage();
     final int maxIndex = latestImage.index ?? 0;
@@ -82,33 +81,37 @@ class FirestoreDatabase {
     };
 
     final Set<int> indexSet = <int>{};
-    List<void>.generate(listSize, (_) {
+    List<void>.generate(listSize * 2, (_) {
       indexSet.add(next(1, maxIndex));
     });
 
-    return indexSet.toList();
+    return indexSet.toList().sublist(0, min(listSize, indexSet.length));
   }
 }
 
 class FirestoreImage extends ImageModel {
   FirestoreImage({
-    this.id,
+    String id,
     this.index,
     @required this.name,
     @required this.fullPath,
     @required String imageURL,
     this.createdAt,
-  }) : super(imageURL: imageURL);
+  }) : super(
+          id: id,
+          imageURL: imageURL,
+        );
 
   FirestoreImage.fromDocument(DocumentSnapshot document)
-      : id = document.documentID,
-        index = document['index'] as int,
+      : index = document['index'] as int,
         name = document['name'] as String,
         fullPath = document['fullPath'] as String,
         createdAt = document['createdAt'] as Timestamp,
-        super(imageURL: document['imageURL'] as String);
+        super(
+          id: document.documentID,
+          imageURL: document['imageURL'] as String,
+        );
 
-  final String id;
   final int index;
   final String name;
   final String fullPath;

@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 
 class Header extends StatelessWidget {
+  const Header({
+    Key key,
+    @required this.onTapAboutButton,
+  }) : super(key: key);
+
+  final Function onTapAboutButton;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -13,8 +20,8 @@ class Header extends StatelessWidget {
           ),
           const Spacer(),
           OutlineButton(
-            onPressed: () {},
-            child: const Text('Help'),
+            onPressed: () => onTapAboutButton(),
+            child: const Text('このサイトについて'),
           ),
         ],
       ),

@@ -5,18 +5,10 @@ class Footer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: <Widget>[
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const <Widget>[
-              Text('LGTM Hub - powered by Flutter & Firebase'),
-              Text('© umatoma'),
-            ],
-          ),
-          const SizedBox(width: 32),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -28,7 +20,7 @@ class Footer extends StatelessWidget {
                   style: TextStyle(color: Theme.of(context).primaryColor),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               const Text('MENTAにて学習サポートも行っています！'),
               InkWell(
                 onTap: () => launch('https://menta.work/plan/1947'),
@@ -37,6 +29,9 @@ class Footer extends StatelessWidget {
                   style: TextStyle(color: Theme.of(context).primaryColor),
                 ),
               ),
+              const SizedBox(height: 8),
+              const Text('LGTM Hub - powered by Flutter & Firebase © umatoma'),
+              const SizedBox(height: 16),
             ],
           ),
         ],

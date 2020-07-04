@@ -215,10 +215,9 @@ class __GridImageState extends State<_GridImage>
     return Stack(
       key: ValueKey<String>(widget.image.imageURL),
       children: <Widget>[
-        MaterialButton(
-          onPressed: () {},
+        Card(
           color: Colors.white,
-          padding: const EdgeInsets.all(0),
+          margin: const EdgeInsets.all(0),
           child: SizedBox.expand(
             child: FadeInImage.memoryNetwork(
               fit: BoxFit.cover,
