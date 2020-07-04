@@ -49,11 +49,11 @@ class FirestoreDatabase {
     return FirestoreImage.fromDocument(query.documents.first);
   }
 
-  Future<List<FirestoreImage>> getImageList() async {
+  Future<List<FirestoreImage>> getLatestImageList() async {
     final QuerySnapshot query = await Firestore.instance
         .collection('images')
         .orderBy('createdAt', descending: true)
-        .limit(20)
+        .limit(25)
         .getDocuments();
     return query.documents
         .map((DocumentSnapshot document) =>
@@ -62,7 +62,7 @@ class FirestoreDatabase {
   }
 
   Future<List<FirestoreImage>> getRandomImageList() async {
-    const int limit = 5;
+    const int limit = 25;
     const int listSize = limit + 10;
 
     final FirestoreImage latestImage = await getLatestImage();

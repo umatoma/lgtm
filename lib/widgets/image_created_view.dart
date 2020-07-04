@@ -32,7 +32,7 @@ class ImageCreatedView extends StatelessWidget {
                   Container(
                     height: 194,
                     width: double.infinity,
-                    child: Image.network(image.imageURL, fit: BoxFit.contain),
+                    child: Image.network(image.imageURL, fit: BoxFit.cover),
                   ),
                   const SizedBox(height: 16),
                   Padding(
@@ -47,7 +47,7 @@ class ImageCreatedView extends StatelessWidget {
                       label: const Flexible(
                         child: Padding(
                           padding: EdgeInsets.symmetric(vertical: 8),
-                          child: Text('Copy Markdown'),
+                          child: Text('クリップボードにコピー'),
                         ),
                       ),
                     ),

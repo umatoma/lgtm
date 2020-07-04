@@ -68,7 +68,7 @@ class _LatestImagesGridView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _ImagesGridView(
-      future: FirestoreDatabase().getImageList(),
+      future: FirestoreDatabase().getLatestImageList(),
     );
   }
 }
@@ -201,6 +201,13 @@ class __GridImageState extends State<_GridImage>
       begin: 1.0,
       end: 0.0,
     ).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+
+    super.dispose();
   }
 
   @override
